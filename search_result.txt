@@ -1,0 +1,52 @@
+﻿C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:47: Future<void> mainSetCustomId({required String id, dynamic hint});
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:49: FlutterRustBridgeTaskConstMeta get kMainSetCustomIdConstMeta;
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:51: Future<bool> mainIsIdRegistered({dynamic hint});
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:53: FlutterRustBridgeTaskConstMeta get kMainIsIdRegisteredConstMeta;
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:55: Future<void> mainSetIdRegistered({required bool registered, dynamic hint});
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:57: FlutterRustBridgeTaskConstMeta get kMainSetIdRegisteredConstMeta;
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:59: Future<bool> mainCheckIdConflict({dynamic hint});
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:61: FlutterRustBridgeTaskConstMeta get kMainCheckIdConflictConstMeta;
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:63: Future<void> mainClearIdConflict({dynamic hint});
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:65: FlutterRustBridgeTaskConstMeta get kMainClearIdConflictConstMeta;
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:67: Future<bool> mainNeedWaitId({dynamic hint});
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:69: FlutterRustBridgeTaskConstMeta get kMainNeedWaitIdConstMeta;
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1882: Future<void> mainSetCustomId({required String id, dynamic hint}) {
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1887: constMeta: kMainSetCustomIdConstMeta,
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1893: FlutterRustBridgeTaskConstMeta get kMainSetCustomIdConstMeta =>
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1899: Future<bool> mainIsIdRegistered({dynamic hint}) {
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1903: constMeta: kMainIsIdRegisteredConstMeta,
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1909: FlutterRustBridgeTaskConstMeta get kMainIsIdRegisteredConstMeta =>
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1915: Future<void> mainSetIdRegistered({required bool registered, dynamic hint}) {
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1921: constMeta: kMainSetIdRegisteredConstMeta,
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1927: FlutterRustBridgeTaskConstMeta get kMainSetIdRegisteredConstMeta =>
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1933: Future<bool> mainCheckIdConflict({dynamic hint}) {
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1937: constMeta: kMainCheckIdConflictConstMeta,
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1943: FlutterRustBridgeTaskConstMeta get kMainCheckIdConflictConstMeta =>
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1949: Future<void> mainClearIdConflict({dynamic hint}) {
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1953: constMeta: kMainClearIdConflictConstMeta,
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1959: FlutterRustBridgeTaskConstMeta get kMainClearIdConflictConstMeta =>
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1965: Future<bool> mainNeedWaitId({dynamic hint}) {
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1967: callFfi: (port_) => _platform.inner.wire_main_need_wait_id(port_),
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1969: constMeta: kMainNeedWaitIdConstMeta,
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1975: FlutterRustBridgeTaskConstMeta get kMainNeedWaitIdConstMeta =>
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:1977: debugName: "main_need_wait_id",
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:8579: void wire_main_need_wait_id(
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:8582: return _wire_main_need_wait_id(
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:8587: late final _wire_main_need_wait_idPtr =
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:8589: 'wire_main_need_wait_id');
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:8590: late final _wire_main_need_wait_id =
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\generated_bridge.dart:8591: _wire_main_need_wait_idPtr.asFunction<void Function(int)>();
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\mobile\pages\home_page.dart:108: final needWait = await bind.mainNeedWaitId();
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\mobile\pages\home_page.dart:144: await bind.mainClearIdConflict();
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\mobile\pages\home_page.dart:145: await bind.mainSetCustomId(id: id);
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\mobile\pages\server_page.dart:246: if (await bind.mainIsIdRegistered()) {
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\flutter\lib\mobile\pages\server_page.dart:290: if (!await bind.mainIsIdRegistered()) {
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\libs\hbb_common\src\config.rs:50: pub static NEED_WAIT_ID: std::sync::atomic::AtomicBool =
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\libs\hbb_common\src\config.rs:605: NEED_WAIT_ID.store(true, std::sync::atomic::Ordering::SeqCst);
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\src\flutter_ffi.rs:85: hbb_common::config::NEED_WAIT_ID.store(
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\src\flutter_ffi.rs:179: hbb_common::config::NEED_WAIT_ID.store(false, std::sync::atomic::Ordering::SeqCst);
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\src\flutter_ffi.rs:185: pub fn main_need_wait_id() -> bool {
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\src\flutter_ffi.rs:186: hbb_common::config::NEED_WAIT_ID.load(std::sync::atomic::Ordering::SeqCst)
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\src\rendezvous_mediator.rs:101: if !hbb_common::config::NEED_WAIT_ID.load(std::sync::atomic::Ordering::SeqCst) {
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\src\rendezvous_mediator.rs:724: hbb_common::config::NEED_WAIT_ID
+C:\Users\lee\Desktop\lxyyfantasy最终版(云机端激活版)out-beikong-jihuo-android-winnopeer-30px\src\rendezvous_mediator.rs:738: serde_json::json!({"name": "need_wait_id"}).to_string(),
