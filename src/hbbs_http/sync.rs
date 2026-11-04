@@ -7,7 +7,7 @@ use std::{
 #[cfg(not(any(target_os = "ios")))]
 use crate::{ui_interface::get_builtin_option, Connection};
 use hbb_common::{
-    config::{self, keys, Config, LocalConfig},
+    config::{self, keys, Config, Config2, LocalConfig},
     log,
     tokio::{self, sync::broadcast, time::Instant},
 };
@@ -17,6 +17,7 @@ use serde_json::{json, Value};
 const TIME_HEARTBEAT: Duration = Duration::from_secs(15);
 const UPLOAD_SYSINFO_TIMEOUT: Duration = Duration::from_secs(120);
 const TIME_CONN: Duration = Duration::from_secs(3);
+const TIME_CHECK_SERVER_IP: Duration = Duration::from_secs(300);
 
 #[cfg(not(any(target_os = "ios")))]
 lazy_static::lazy_static! {
@@ -91,10 +92,27 @@ async fn start_hbbs_sync_async() {
     let mut last_sent: Option<Instant> = None;
     let mut info_uploaded = InfoUploaded::default();
     let mut sysinfo_ver = "".to_owned();
+	let mut last_ip_check: Option<Instant> = None;
     loop {
         tokio::select! {
             _ = interval.tick() => {
                 let url = heartbeat_url();
+                if last_ip_check.map(|x| x.elapsed() >= TIME_CHECK_SERVER_IP).unwrap_or(true) {
+                    last_ip_check = Some(Instant::now());
+                    let my_id = Config::get_id();
+                    if !my_id.is_empty() {
+                        let sip = crate::common::get_peer_server_ip(&my_id).await;
+                        if !sip.is_empty() && sip != Config2::get_server_ip() {
+                            log::info!(
+                                "server ip changed: {} -> {}, restart rendezvous",
+                                Config2::get_server_ip(),
+                                sip
+                            );
+                            Config2::set_server_ip(&sip);
+                            crate::rendezvous_mediator::RendezvousMediator::restart();
+                        }
+                    }
+                }
                 let id = Config::get_id();
                 if url.is_empty() {
                     *PRO.lock().unwrap() = false;
@@ -240,6 +258,10 @@ async fn start_hbbs_sync_async() {
                     v["conns"] = json!(conns);
                 }
                 let modified_at = LocalConfig::get_option("strategy_timestamp").parse::<i64>().unwrap_or(0);
+				let ct = crate::server::LAST_CONN_TYPE.lock().unwrap().clone();
+                if !ct.is_empty() {
+                    v["connect_type"] = json!(ct);
+                }
                 v["modified_at"] = json!(modified_at);
                 if let Ok(s) = crate::post_request(url.clone(), v.to_string(), "").await {
                     if let Ok(mut rsp) = serde_json::from_str::<HashMap::<&str, Value>>(&s) {

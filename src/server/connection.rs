@@ -76,6 +76,7 @@ lazy_static::lazy_static! {
     static ref WAKELOCK_SENDER: Arc::<Mutex<std::sync::mpsc::Sender<(usize, usize)>>> = Arc::new(Mutex::new(start_wakelock_thread()));
     static ref WAKELOCK_KEEP_AWAKE_OPTION: Arc::<Mutex<Option<bool>>> = Default::default();
     static ref ALIVE_CONNS: Arc::<Mutex<Vec<i32>>> = Default::default();
+    pub static ref LAST_CONN_TYPE: Arc<Mutex<String>> = Default::default();
 }
 
 pub fn privileged_conn_count() -> usize {PRIVILEGED_CONNS.lock().unwrap().len()}
@@ -358,10 +359,12 @@ impl Connection {
         server: super::ServerPtrWeak,
         control_permissions: Option<ControlPermissions>,
         privileged: bool,
+        conn_kind: &'static str,
     ) {
         // Android is not supported yet, so we always set control_permissions to None.
         #[cfg(target_os = "android")]
         let control_permissions = None;
+        *LAST_CONN_TYPE.lock().unwrap() = conn_kind.to_owned();
         let _raii_conn_id = raii::ConnectionID::new(id);          // ← 加这一行
         let _raii_privileged = raii::PrivilegedConnID::new(id, privileged);
         let _raii_control_permissions_id =
@@ -1379,7 +1382,6 @@ impl Connection {
             self.send_login_error(crate::client::REQUIRE_2FA).await;
             return;
         }
-        self.authorized = true;
         let (conn_type, auth_conn_type) = if self.file_transfer.is_some() {
             (1, AuthConnType::FileTransfer)
         } else if self.port_forward_socket.is_some() {

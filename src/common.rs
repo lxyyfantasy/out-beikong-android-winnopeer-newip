@@ -1122,7 +1122,37 @@ pub fn get_audit_server(api: String, custom: String, typ: String) -> String {
     format!("{}/api/audit/{}", url, typ)
 }
 
+fn get_api_server_fallback(url: &str) -> Option<String> {
+    let primary = Config::get_option(EXTERNAL_PRIMARY_SERVER);
+    if primary.is_empty() {
+        return None;
+    }
+    let primary_url = format!("http://{}:23399", primary);
+    if !url.starts_with(&primary_url) {
+        return None;
+    }
+    let secondary = Config::get_option(EXTERNAL_SECONDARY_SERVER);
+    if secondary.is_empty() {
+        return None;
+    }
+    Some(url.replacen(&primary_url, &format!("http://{}:23399", secondary), 1))
+}
+
 pub async fn post_request(url: String, body: String, header: &str) -> ResultType<String> {
+    match post_request_inner(url.clone(), body.clone(), header).await {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            if let Some(fallback_url) = get_api_server_fallback(&url) {
+                log::warn!("API request to {} failed: {}, retry with {}", url, e, fallback_url);
+                post_request_inner(fallback_url, body, header).await
+            } else {
+                Err(e)
+            }
+        }
+    }
+}
+
+async fn post_request_inner(url: String, body: String, header: &str) -> ResultType<String> {
     let proxy_conf = Config::get_socks();
     let tls_url = get_url_for_tls(&url, &proxy_conf);
     let tls_type = get_cached_tls_type(tls_url);
@@ -1346,6 +1376,25 @@ pub async fn http_request_sync(
     body: Option<String>,
     header: String,
 ) -> ResultType<String> {
+    match http_request_sync_inner(url.clone(), method.clone(), body.clone(), header.clone()).await {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            if let Some(fallback_url) = get_api_server_fallback(&url) {
+                log::warn!("HTTP request to {} failed: {}, retry with {}", url, e, fallback_url);
+                http_request_sync_inner(fallback_url, method, body, header).await
+            } else {
+                Err(e)
+            }
+        }
+    }
+}
+
+async fn http_request_sync_inner(
+    url: String,
+    method: String,
+    body: Option<String>,
+    header: String,
+) -> ResultType<String> {
     let proxy_conf = Config::get_socks();
     let tls_url = get_url_for_tls(&url, &proxy_conf);
     let tls_type = get_cached_tls_type(tls_url);
@@ -1361,7 +1410,6 @@ pub async fn http_request_sync(
         danger_accept_invalid_cert,
     )
     .await?;
-    // Serialize response headers
     let mut response_headers = serde_json::map::Map::new();
     for (key, value) in response.headers() {
         response_headers.insert(
@@ -1373,7 +1421,6 @@ pub async fn http_request_sync(
     let status_code = response.status().as_u16();
     let response_body = response.text().await?;
 
-    // Construct the JSON object
     let mut result = serde_json::map::Map::new();
     result.insert("status_code".to_string(), serde_json::json!(status_code));
     result.insert(
@@ -1382,7 +1429,6 @@ pub async fn http_request_sync(
     );
     result.insert("body".to_string(), serde_json::json!(response_body));
 
-    // Convert map to JSON string
     serde_json::to_string(&result).map_err(|e| anyhow!("Failed to serialize response: {}", e))
 }
 

@@ -163,6 +163,7 @@ async fn accept_connection_(
     socket: Stream,
     secure: bool,
     control_permissions: Option<ControlPermissions>,
+    conn_kind: &'static str,
 ) -> ResultType<()> {
     let local_addr = socket.local_addr();
     drop(socket);
@@ -181,6 +182,7 @@ async fn accept_connection_(
             secure,
             control_permissions,
             true,
+            conn_kind,
         )
         .await?;
     }
@@ -194,6 +196,7 @@ pub async fn create_tcp_connection(
     secure: bool,
     control_permissions: Option<ControlPermissions>,
     privileged: bool,
+    conn_kind: &'static str,
 ) -> ResultType<()> {
     let mut stream = stream;
 
@@ -303,6 +306,7 @@ pub async fn create_tcp_connection(
         Arc::downgrade(&server),
         control_permissions,
         privileged,
+        conn_kind,
     )
     .await;
     Ok(())
@@ -314,8 +318,9 @@ pub async fn accept_connection(
     peer_addr: SocketAddr,
     secure: bool,
     control_permissions: Option<ControlPermissions>,
+    conn_kind: &'static str,
 ) {
-    if let Err(err) = accept_connection_(server, socket, secure, control_permissions).await {
+    if let Err(err) = accept_connection_(server, socket, secure, control_permissions, conn_kind).await {
         log::warn!("Failed to accept connection from {}: {}", peer_addr, err);
     }
 }
@@ -371,7 +376,7 @@ async fn create_relay_connection_(
         ..Default::default()
     });
     stream.send(&msg_out).await?;
-    create_tcp_connection(server, stream, peer_addr, secure, control_permissions, true).await?;
+        create_tcp_connection(server, stream, peer_addr, secure, control_permissions, true, "relay").await?;
     Ok(())
 }
 

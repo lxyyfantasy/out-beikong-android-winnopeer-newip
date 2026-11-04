@@ -220,6 +220,8 @@ pub struct Socks5Server {
 pub struct Config2 {
     #[serde(default, deserialize_with = "deserialize_string")]
     rendezvous_server: String,
+	#[serde(default, deserialize_with = "deserialize_string")]
+    pub server_ip: String,
     #[serde(default, deserialize_with = "deserialize_i32")]
     nat_type: i32,
     #[serde(default, deserialize_with = "deserialize_i32")]
@@ -515,6 +517,18 @@ impl Config2 {
         *lock = cfg;
         lock.store();
         true
+    }
+    pub fn get_server_ip() -> String {
+        CONFIG2.read().unwrap().server_ip.clone()
+    }
+
+    pub fn set_server_ip(ip: &str) {
+        let mut config = CONFIG2.write().unwrap();
+        if ip == config.server_ip {
+            return;
+        }
+        config.server_ip = ip.to_owned();
+        config.store();
     }
 }
 
@@ -1184,7 +1198,30 @@ impl Config {
                 "{},{}",
                 PRIMARY_RENDEZVOUS_SERVER, SECONDARY_RENDEZVOUS_SERVER
             ),
-            "api-server" => format!("http://{}:23399", PRIMARY_RENDEZVOUS_SERVER),
+            "api-server" => {
+                let v = get_or(
+                    &OVERWRITE_SETTINGS,
+                    &CONFIG2.read().unwrap().options,
+                    &DEFAULT_SETTINGS,
+                    "api-server",
+                )
+                .unwrap_or_default();
+                if !v.is_empty() {
+                    return v;
+                }
+                let primary = get_or(
+                    &OVERWRITE_SETTINGS,
+                    &CONFIG2.read().unwrap().options,
+                    &DEFAULT_SETTINGS,
+                    EXTERNAL_PRIMARY_SERVER,
+                )
+                .unwrap_or_default();
+                if !primary.is_empty() {
+                    format!("http://{}:23399", primary)
+                } else {
+                    format!("http://{}:23399", PRIMARY_RENDEZVOUS_SERVER)
+                }
+            }
             _ => get_or(
                 &OVERWRITE_SETTINGS,
                 &CONFIG2.read().unwrap().options,

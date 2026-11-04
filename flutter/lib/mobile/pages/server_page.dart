@@ -16,6 +16,7 @@ import '../../models/platform_model.dart';
 import '../../models/server_model.dart';
 import 'home_page.dart';
 import '../../common/widgets/account_api.dart';
+import '../../common/widgets/reset_ip_dialog.dart';
 
 class ServerPage extends StatefulWidget implements PageShape {
   @override
@@ -257,6 +258,21 @@ class _ServerPageState extends State<ServerPage> {
             }
           },
           label: const Text("托管激活"),
+        ),
+        const SizedBox(height: 6),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2E7D32),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            minimumSize: const Size(0, 32),
+            textStyle: const TextStyle(fontSize: 13),
+          ),
+          icon: const Icon(Icons.settings_ethernet, size: 18),
+          onPressed: resetIpDialog,
+          label: const Text("重置IP"),
         ),
         const SizedBox(height: 6),
         Text(

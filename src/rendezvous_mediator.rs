@@ -13,7 +13,8 @@ use hbb_common::{
     allow_err,
     anyhow::{self, bail},
     config::{
-        self, keys::*, option2bool, use_ws, Config, CONNECT_TIMEOUT, REG_INTERVAL, RENDEZVOUS_PORT,
+        self, keys::*, option2bool, use_ws, Config, Config2, CONNECT_TIMEOUT, REG_INTERVAL,
+        RENDEZVOUS_PORT,
     },
     futures::future::join_all,
     log,
@@ -122,7 +123,14 @@ impl RendezvousMediator {
             {
                 SHOULD_EXIT.store(false, Ordering::SeqCst);
                 MANUAL_RESTARTED.store(false, Ordering::SeqCst);
-                let servers = Config::get_rendezvous_servers();
+                let servers = {
+                    let sip = Config2::get_server_ip();
+                    if !sip.is_empty() {
+                        vec![sip]
+                    } else {
+                        Config::get_rendezvous_servers()
+                    }
+                };
                 for host in servers {
                     if SHOULD_EXIT.load(Ordering::SeqCst) || MANUAL_RESTARTED.load(Ordering::SeqCst) {
                         break;
@@ -576,6 +584,7 @@ impl RendezvousMediator {
             peer_addr,
             true,
             fla.control_permissions.into_option(),
+            "lan",
         )
         .await;
         Ok(())
@@ -653,7 +662,7 @@ impl RendezvousMediator {
         msg_out.set_punch_hole_sent(msg_punch);
         let bytes = msg_out.write_to_bytes()?;
         socket.send_raw(bytes).await?;
-        crate::accept_connection(server.clone(), socket, peer_addr, true, control_permissions)
+        crate::accept_connection(server.clone(), socket, peer_addr, true, control_permissions, "p2p")
             .await;
         Ok(())
     }
@@ -846,6 +855,7 @@ async fn direct_server(server: ServerPtr) {
                             false,
                             None, // Direct connections don't have control_permissions
                             false,
+                            "lan",
                         )
                         .await
                     );
@@ -924,6 +934,7 @@ async fn udp_nat_listen(
             true,
             control_permissions,
             true,
+            "p2p",
         )
         .await?;
         Ok(())
