@@ -18,6 +18,7 @@ use hbb_common::{
     bytes::Bytes,
     config::{
         self, keys, use_ws, Config, LocalConfig, CONNECT_TIMEOUT, READ_TIMEOUT, RENDEZVOUS_PORT,
+        EXTERNAL_PRIMARY_SERVER, EXTERNAL_SECONDARY_SERVER,
     },
     futures::future::join_all,
     futures_util::future::poll_fn,
@@ -1120,6 +1121,59 @@ pub fn get_audit_server(api: String, custom: String, typ: String) -> String {
         return "".to_owned();
     }
     format!("{}/api/audit/{}", url, typ)
+}
+
+pub async fn get_peer_server_ip(id: &str) -> String {
+    let url = get_api_server(
+        Config::get_option("api-server"),
+        Config::get_option("custom-rendezvous-server"),
+    );
+    if url.is_empty() || is_public(&url) {
+        return "".to_owned();
+    }
+    let req_url = format!("{}/api/peer/server_ip?id={}", url, id);
+    let proxy_conf = Config::get_socks();
+    let tls_url = get_url_for_tls(&req_url, &proxy_conf);
+    let tls_type = get_cached_tls_type(tls_url);
+    let danger_accept_invalid_cert = get_cached_tls_accept_invalid_cert(tls_url);
+    let client = create_http_client_async(
+        tls_type.unwrap_or(TlsType::Rustls),
+        danger_accept_invalid_cert.unwrap_or(false),
+    );
+    let resp = match client
+        .get(&req_url)
+        .timeout(std::time::Duration::from_secs(12))
+        .send()
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            log::error!("get_peer_server_ip request failed: {:?}", e);
+            return "".to_owned();
+        }
+    };
+    let text = match resp.text().await {
+        Ok(t) => t,
+        Err(e) => {
+            log::error!("get_peer_server_ip read body failed: {:?}", e);
+            return "".to_owned();
+        }
+    };
+    #[derive(serde::Deserialize)]
+    struct Resp {
+        #[serde(default)]
+        code: i32,
+        #[serde(default)]
+        data: String,
+    }
+    match serde_json::from_str::<Resp>(&text) {
+        Ok(r) if r.code == 0 => r.data.trim().to_owned(),
+        Ok(_) => "".to_owned(),
+        Err(e) => {
+            log::error!("get_peer_server_ip parse failed: {}, body: {}", e, text);
+            "".to_owned()
+        }
+    }
 }
 
 fn get_api_server_fallback(url: &str) -> Option<String> {
