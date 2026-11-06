@@ -82,10 +82,10 @@ fn initialize(app_dir: &str, custom_client_config: &str) {
         hbb_common::init_log(false, "flutter_ffi");
     }
     // 启动时恢复冲突/等待状态，保证重启后仍会弹窗
-    hbb_common::config::NEED_WAIT_ID.store(
-        hbb_common::config::LocalConfig::get_option("need-wait-id") == "Y",
-        std::sync::atomic::Ordering::SeqCst,
-    );
+    if hbb_common::config::LocalConfig::get_option("need-wait-id") == "Y"
+        && hbb_common::config::Config::get_id().is_empty() {
+        hbb_common::config::NEED_WAIT_ID.store(true, std::sync::atomic::Ordering::SeqCst);
+    }
 }
 
 #[inline]
@@ -147,11 +147,12 @@ pub fn main_set_custom_id(id: String) {
         let mut cfg = config::Config::get();
         cfg.set_custom_id_with_keypair(&id);
         config::Config::set(cfg);
-        log::info!("custom id set: {}", id);
+        // 再读一次确认 id 已落盘
+        let _ = config::Config::get_id();
     }
-    main_set_id_registered(false);
-    hbb_common::config::NEED_WAIT_ID.store(false, std::sync::atomic::Ordering::SeqCst);
     hbb_common::config::LocalConfig::set_option("need-wait-id".into(), "".into());
+    hbb_common::config::NEED_WAIT_ID.store(false, std::sync::atomic::Ordering::SeqCst);
+    main_set_id_registered(false);
     hbb_common::config::ID_READY.notify_one();
 }
 

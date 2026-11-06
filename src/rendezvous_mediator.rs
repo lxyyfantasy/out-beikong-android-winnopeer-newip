@@ -42,6 +42,10 @@ lazy_static::lazy_static! {
 static SHOULD_EXIT: AtomicBool = AtomicBool::new(false);
 static MANUAL_RESTARTED: AtomicBool = AtomicBool::new(false);
 static SENT_REGISTER_PK: AtomicBool = AtomicBool::new(false);
+static DIRECT_LISTEN_REBUILD: AtomicBool = AtomicBool::new(false);
+
+pub fn trigger_direct_rebuild() {
+}
 
 #[derive(Clone)]
 pub struct RendezvousMediator {
@@ -584,7 +588,7 @@ impl RendezvousMediator {
             peer_addr,
             true,
             fla.control_permissions.into_option(),
-            "lan",
+            "ip",
         )
         .await;
         Ok(())
@@ -662,7 +666,7 @@ impl RendezvousMediator {
         msg_out.set_punch_hole_sent(msg_punch);
         let bytes = msg_out.write_to_bytes()?;
         socket.send_raw(bytes).await?;
-        crate::accept_connection(server.clone(), socket, peer_addr, true, control_permissions, "p2p")
+        crate::accept_connection(server.clone(), socket, peer_addr, true, control_permissions, "direct")
             .await;
         Ok(())
     }
@@ -855,7 +859,7 @@ async fn direct_server(server: ServerPtr) {
                             false,
                             None, // Direct connections don't have control_permissions
                             false,
-                            "lan",
+                            "ip",
                         )
                         .await
                     );
@@ -934,7 +938,7 @@ async fn udp_nat_listen(
             true,
             control_permissions,
             true,
-            "p2p",
+            "direct",
         )
         .await?;
         Ok(())

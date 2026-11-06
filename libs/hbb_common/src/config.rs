@@ -5,7 +5,7 @@ use std::{
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
     ops::{Deref, DerefMut},
     path::{Path, PathBuf},
-    sync::{atomic::AtomicBool, Mutex, RwLock},
+    sync::{atomic::{AtomicBool, Ordering}, Mutex, RwLock},
     time::{Duration, Instant, SystemTime},
 };
 
@@ -614,15 +614,10 @@ impl Config {
         }
         //增加自定义ID
         if !id_valid {
-            // 首次启动或未注册过：不生成随机 ID，标记等待 Flutter 弹窗输入
             if config.key_pair.0.is_empty() || !config.key_confirmed {
-                NEED_WAIT_ID.store(true, std::sync::atomic::Ordering::SeqCst);
-                log::info!("no id and not registered, waiting for flutter to set custom id");
-                // config.id 保持空，不生成随机 ID
-            } else {
-                NEED_WAIT_ID.store(true, std::sync::atomic::Ordering::SeqCst);
-                log::info!("no valid id, waiting for flutter to set custom id");
+                NEED_WAIT_ID.store(true, Ordering::SeqCst);
             }
+            // 删掉 else 里的 NEED_WAIT_ID.store(true)，改成不置真
         }
         if store {
             config.store();
@@ -1038,7 +1033,7 @@ impl Config {
         if !v {
             config.keys_confirmed = Default::default();
         }
-        // config.store();  // 注释掉，不写盘
+        config.store();
     }
 
     pub fn get_host_key_confirmed(host: &str) -> bool {

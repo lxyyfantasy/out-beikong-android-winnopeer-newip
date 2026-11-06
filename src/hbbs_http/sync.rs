@@ -92,7 +92,7 @@ async fn start_hbbs_sync_async() {
     let mut last_sent: Option<Instant> = None;
     let mut info_uploaded = InfoUploaded::default();
     let mut sysinfo_ver = "".to_owned();
-	let mut last_ip_check: Option<Instant> = None;
+    let mut last_ip_check: Option<Instant> = None;
     loop {
         tokio::select! {
             _ = interval.tick() => {
@@ -109,6 +109,7 @@ async fn start_hbbs_sync_async() {
                                 sip
                             );
                             Config2::set_server_ip(&sip);
+                            crate::lan::trigger_rebuild();
                             crate::rendezvous_mediator::RendezvousMediator::restart();
                         }
                     }
@@ -258,7 +259,7 @@ async fn start_hbbs_sync_async() {
                     v["conns"] = json!(conns);
                 }
                 let modified_at = LocalConfig::get_option("strategy_timestamp").parse::<i64>().unwrap_or(0);
-				let ct = crate::server::LAST_CONN_TYPE.lock().unwrap().clone();
+                let ct = crate::server::LAST_CONN_TYPE.lock().unwrap().clone();
                 if !ct.is_empty() {
                     v["connect_type"] = json!(ct);
                 }
