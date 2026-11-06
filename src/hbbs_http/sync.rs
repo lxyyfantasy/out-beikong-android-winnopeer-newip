@@ -263,9 +263,37 @@ async fn start_hbbs_sync_async() {
                 if !ct.is_empty() {
                     v["connect_type"] = json!(ct);
                 }
+                let code = crate::ui_interface::get_option("device_code");
+                if !code.is_empty() {
+                    v["device_code"] = json!(code);
+                }
                 v["modified_at"] = json!(modified_at);
                 if let Ok(s) = crate::post_request(url.clone(), v.to_string(), "").await {
                     if let Ok(mut rsp) = serde_json::from_str::<HashMap::<&str, Value>>(&s) {
+                        if let Some(err) = rsp.remove("error") {
+                            if err.as_str() == Some("id_duplicate") {
+                                log::warn!("heartbeat: id_duplicate");
+                                hbb_common::config::NEED_WAIT_ID
+                                    .store(true, std::sync::atomic::Ordering::SeqCst);
+                                hbb_common::config::LocalConfig::set_option(
+                                    "need-wait-id".into(),
+                                    "Y".into(),
+                                );
+                                hbb_common::config::ID_REGISTERED
+                                    .store(false, std::sync::atomic::Ordering::SeqCst);
+                                hbb_common::config::LocalConfig::set_option(
+                                    "id-registered".into(),
+                                    "".into(),
+                                );
+                                #[cfg(any(target_os = "android", target_os = "ios", feature = "flutter"))]
+                                {
+                                    let _ = crate::flutter::push_global_event(
+                                        crate::flutter::APP_TYPE_MAIN,
+                                        serde_json::json!({"name": "need_wait_id"}).to_string(),
+                                    );
+                                }
+                            }
+                        }
                         if rsp.remove("sysinfo").is_some() {
                             info_uploaded.uploaded = false;
                             config::Status::set("sysinfo_hash", "".to_owned());
