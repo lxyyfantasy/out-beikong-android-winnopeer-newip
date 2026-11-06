@@ -48,23 +48,35 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     initPages();
-    // 增加自定义ID
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _checkCustomId();
-      _checkAccessibilityGlobal();  
+      _checkAccessibilityGlobal();
     });
+    // 监听运行中 ID 重复事件
+    platformFFI.registerEventHandler(
+      'need_wait_id',
+      'need_wait_id',
+      (evt) async {
+        if (!mounted) return;
+        if (evt['name'] != 'need_wait_id') return;
+        if (gFFI.dialogManager.existing('custom_id_dialog')) return;
+        await _showCustomIdDialog();
+      },
+    );
   }
   
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    platformFFI.unregisterEventHandler('need_wait_id', 'need_wait_id');
     super.dispose();
   }
   
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _checkCustomId();
         _checkAccessibilityGlobal();
       });
     }
@@ -218,7 +230,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         onSubmit: submit,
         onCancel: () {},
       );
-    }, backDismiss: false, clickMaskDismiss: false);
+    }, backDismiss: false, clickMaskDismiss: false, tag: 'custom_id_dialog');  // ← 加 tag
     return completer.future;
   }
 
