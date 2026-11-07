@@ -162,11 +162,21 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
           errorMsg = null;
           inviteErrorMsg = null;
         });
-        final r = await AccountApi.checkInvite(invite);
+        String deviceCode = '';
+        try {
+          deviceCode = (await bind.mainGetOption(key: 'device_code')).trim();
+        } catch (_) {}
+        final r = await AccountApi.checkInvite(invite, id, deviceCode);
         if (!r.isOk) {
           setState(() {
             submitting = false;
-            inviteErrorMsg = r.code == 'INVITE_ERROR' ? '邀请码错误' : '邀请码校验失败';
+            if (r.code == 'INVITE_ERROR') {
+              inviteErrorMsg = '邀请码错误';
+            } else if (r.code == 'ID_DUPLICATE') {
+              errorMsg = 'ID 已存在，请换一个';
+            } else {
+              inviteErrorMsg = '邀请码校验失败';
+            }
           });
           return;
         }
