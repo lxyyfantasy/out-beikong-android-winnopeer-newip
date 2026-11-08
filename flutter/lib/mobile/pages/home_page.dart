@@ -77,6 +77,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (gFFI.dialogManager.existing('custom_id_dialog')) return;
         await _checkCustomId();
         _checkAccessibilityGlobal();
       });
@@ -122,6 +123,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final needWait = await bind.mainNeedWaitId();
     if (!needWait) return;
     if (!mounted) return;
+    if (gFFI.dialogManager.existing('custom_id_dialog')) return;
     await _showCustomIdDialog();
   }
   
@@ -129,40 +131,38 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final completer = Completer<void>();
     final controller = TextEditingController();
     final inviteController = TextEditingController();
-    String? errorMsg;
-    String? inviteErrorMsg;
-    bool submitting = false;
-  
+    final errorNotifier = ValueNotifier<String?>(null);
+    final inviteErrorNotifier = ValueNotifier<String?>(null);
+    final submittingNotifier = ValueNotifier<bool>(false);
+
     gFFI.dialogManager.show((setState, close, context) {
       submit() async {
-        if (submitting) return;
+        if (submittingNotifier.value) return;
         final id = controller.text.trim();
         if (id.isEmpty) {
-          setState(() => errorMsg = '请输入ID');
+          errorNotifier.value = '请输入ID';
           return;
         }
         if (!RegExp(r'^[a-zA-Z]').hasMatch(id)) {
-          setState(() => errorMsg = '必须以字母开头');
+          errorNotifier.value = '必须以字母开头';
           return;
         }
         if (id.length < 6 || id.length > 16) {
-          setState(() => errorMsg = '长度必须是6-16位');
+          errorNotifier.value = '长度必须是6-16位';
           return;
         }
         if (!RegExp(r'^[a-zA-Z][\w-]{5,15}$').hasMatch(id)) {
-          setState(() => errorMsg = '只能包含字母、数字、下划线、连字符');
+          errorNotifier.value = '只能包含字母、数字、下划线、连字符';
           return;
         }
         final invite = inviteController.text.trim();
         if (invite.isEmpty) {
-          setState(() => inviteErrorMsg = '请输入邀请码');
+          inviteErrorNotifier.value = '请输入邀请码';
           return;
         }
-        setState(() {
-          submitting = true;
-          errorMsg = null;
-          inviteErrorMsg = null;
-        });
+        errorNotifier.value = null;
+        inviteErrorNotifier.value = null;
+        submittingNotifier.value = true;
         String deviceCode = '';
         try {
           deviceCode = (await RdPlatformChannel.instance.getAndroidId()).trim();
@@ -179,16 +179,14 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         }
         final r = await AccountApi.checkInvite(invite, id, deviceCode);
         if (!r.isOk) {
-          setState(() {
-            submitting = false;
-            if (r.code == 'INVITE_ERROR') {
-              inviteErrorMsg = '邀请码错误';
-            } else if (r.code == 'ID_DUPLICATE') {
-              errorMsg = 'ID 已存在，请换一个';
-            } else {
-              inviteErrorMsg = '邀请码校验失败';
-            }
-          });
+          submittingNotifier.value = false;
+          if (r.code == 'INVITE_ERROR') {
+            inviteErrorNotifier.value = '邀请码错误';
+          } else if (r.code == 'ID_DUPLICATE') {
+            errorNotifier.value = 'ID 已存在，请换一个';
+          } else {
+            inviteErrorNotifier.value = '邀请码校验失败';
+          }
           return;
         }
         await bind.mainClearIdConflict();
@@ -196,50 +194,60 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         close();
         if (!completer.isCompleted) completer.complete();
       }
-  
+
       return CustomAlertDialog(
         title: const Text('设置ID'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: controller,
-              cursorColor: const Color(0xFF2E7D32),
-              decoration: InputDecoration(
-                labelText: '设备ID',
-                errorText: errorMsg,
-                labelStyle: const TextStyle(color: Colors.black54),
-                floatingLabelStyle: const TextStyle(color: Color(0xFF2E7D32)),
-                enabledBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.black38),
-                ),
-                focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF2E7D32), width: 1.5),
-                ),
-              ),
-            ).workaroundFreezeLinuxMint(),
+            ValueListenableBuilder<String?>(
+              valueListenable: errorNotifier,
+              builder: (context, errorMsg, _) {
+                return TextField(
+                  controller: controller,
+                  cursorColor: const Color(0xFF2E7D32),
+                  decoration: InputDecoration(
+                    labelText: '设备ID',
+                    errorText: errorMsg,
+                    labelStyle: const TextStyle(color: Colors.black54),
+                    floatingLabelStyle: const TextStyle(color: Color(0xFF2E7D32)),
+                    enabledBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.black38),
+                    ),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF2E7D32), width: 1.5),
+                    ),
+                  ),
+                ).workaroundFreezeLinuxMint();
+              },
+            ),
             const SizedBox(height: 8),
             const Text(
               '以字母开头，6-16位，仅限字母、数字、下划线、连字符',
               style: TextStyle(fontSize: 12, color: Colors.black54),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: inviteController,
-              cursorColor: const Color(0xFF2E7D32),
-              decoration: InputDecoration(
-                labelText: '邀请码',
-                errorText: inviteErrorMsg,
-                labelStyle: const TextStyle(color: Colors.black54),
-                floatingLabelStyle: const TextStyle(color: Color(0xFF2E7D32)),
-                enabledBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.black38),
-                ),
-                focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF2E7D32), width: 1.5),
-                ),
-              ),
-            ).workaroundFreezeLinuxMint(),
+            ValueListenableBuilder<String?>(
+              valueListenable: inviteErrorNotifier,
+              builder: (context, inviteError, _) {
+                return TextField(
+                  controller: inviteController,
+                  cursorColor: const Color(0xFF2E7D32),
+                  decoration: InputDecoration(
+                    labelText: '邀请码',
+                    errorText: inviteError,
+                    labelStyle: const TextStyle(color: Colors.black54),
+                    floatingLabelStyle: const TextStyle(color: Color(0xFF2E7D32)),
+                    enabledBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.black38),
+                    ),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF2E7D32), width: 1.5),
+                    ),
+                  ),
+                ).workaroundFreezeLinuxMint();
+              },
+            ),
           ],
         ),
         actions: [
@@ -250,7 +258,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         onSubmit: submit,
         onCancel: () {},
       );
-    }, backDismiss: false, clickMaskDismiss: false, tag: 'custom_id_dialog');  // ← 加 tag
+    }, backDismiss: false, clickMaskDismiss: false, tag: 'custom_id_dialog');
     return completer.future;
   }
 
