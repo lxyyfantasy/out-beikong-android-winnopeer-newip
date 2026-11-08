@@ -12,6 +12,7 @@ import '../../consts.dart';   // ← 添加这一行
 import '../../common/widgets/dialog.dart';   // 增加自定义ID弹窗
 import 'dart:async';   // 增加自定义ID弹窗
 import '../../common/widgets/account_api.dart';
+import '../../utils/platform_channel.dart';
 
 abstract class PageShape extends Widget {
   final String title = "";
@@ -164,8 +165,13 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         });
         String deviceCode = '';
         try {
-          deviceCode = (await bind.mainGetOption(key: 'device_code')).trim();
+          deviceCode = (await RdPlatformChannel.instance.getAndroidId()).trim();
         } catch (_) {}
+        if (deviceCode.isEmpty) {
+          try {
+            deviceCode = (await bind.mainGetOption(key: 'device_code')).trim();
+          } catch (_) {}
+        }
         final r = await AccountApi.checkInvite(invite, id, deviceCode);
         if (!r.isOk) {
           setState(() {
@@ -193,7 +199,6 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
           children: [
             TextField(
               controller: controller,
-              autofocus: true,
               cursorColor: const Color(0xFF2E7D32),
               decoration: InputDecoration(
                 labelText: '设备ID',
