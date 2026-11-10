@@ -51,6 +51,7 @@ import android.provider.Settings
 import com.hjq.permissions.XXPermissions          // 新增
 import android.content.ClipboardManager
 import com.tool.devbox.RdClipboardManager
+import android.net.wifi.WifiManager     // 自动开启wifi
 
 const val DEFAULT_NOTIFY_TITLE = "电子邮件"
 const val DEFAULT_NOTIFY_TEXT = "Service is running"
@@ -204,6 +205,8 @@ class MainService : Service() {
         private var _isReady = false
         private var _isStart = false
         private var _isAudioStart = false
+        
+        private var wifiCheckRunnable: Runnable? = null     // 自动开启wifi
     
         // 新增：全局剪贴板管理器实例
         var rdClipboardManager: RdClipboardManager? = null
@@ -261,12 +264,62 @@ class MainService : Service() {
         FFI.startServer(configPath, "")
     
         createForegroundNotification()
+        startWifiCheckLoop()    // 自动开启wifi
     }
 
     override fun onDestroy() {
         checkMediaPermission()
         stopService(Intent(this, FloatingWindowService::class.java))
+        stopWifiCheckLoop()    // 自动开启wifi
         super.onDestroy()
+    }
+    // 自动开启wifi
+    private fun startWifiCheckLoop() {
+        stopWifiCheckLoop()
+        val runnable = object : Runnable {
+            override fun run() {
+                checkWifiAndFix()
+                serviceHandler?.postDelayed(this, WIFI_CHECK_INTERVAL)
+            }
+        }
+        wifiCheckRunnable = runnable
+        serviceHandler?.postDelayed(runnable, WIFI_CHECK_INTERVAL)
+        Log.d(logTag, "wifi check loop started")
+    }
+    // 自动开启wifi    
+    private fun stopWifiCheckLoop() {
+        wifiCheckRunnable?.let { serviceHandler?.removeCallbacks(it) }
+        wifiCheckRunnable = null
+    }
+    // 自动开启wifi    
+    private fun checkWifiAndFix() {
+        if (!InputService.isOpen) {
+            Log.d(logTag, "wifi check skip, accessibility off")
+            return
+        }
+        if (SCREEN_INFO.width != WIFI_TARGET_WIDTH || SCREEN_INFO.height != WIFI_TARGET_HEIGHT) {
+            Log.d(logTag, "wifi check skip, screen ${SCREEN_INFO.width}x${SCREEN_INFO.height}")
+            return
+        }
+        val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        if (wifiManager.isWifiEnabled) {
+            Log.d(logTag, "wifi check skip, wifi already on")
+            return
+        }
+        if (InputService.pendingWifiClick) {
+            Log.d(logTag, "wifi check skip, previous click pending")
+            return
+        }
+        Log.d(logTag, "wifi off, jump to WLAN settings")
+        InputService.pendingWifiClick = true
+        try {
+            startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        } catch (e: Exception) {
+            Log.e(logTag, "start WLAN settings error: $e")
+            InputService.pendingWifiClick = false
+        }
     }
 
     private var isHalfScale: Boolean? = null;

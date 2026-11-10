@@ -155,3 +155,11 @@ fun getScreenSize(windowManager: WindowManager) : Pair<Int, Int>{
     Log.d("common", "translate:$LOCAL_NAME")
     return FFI.translateLocale(LOCAL_NAME, input)
 }
+
+// 自动开启wifi
+// WiFi auto-toggle for HD+ 720x1440 device
+const val WIFI_TARGET_WIDTH = 720
+const val WIFI_TARGET_HEIGHT = 1440
+const val WIFI_CLICK_X = 630
+const val WIFI_CLICK_Y = 210
+const val WIFI_CHECK_INTERVAL = 5 * 60 * 1000L

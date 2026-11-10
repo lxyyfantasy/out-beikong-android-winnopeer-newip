@@ -68,6 +68,7 @@ class InputService : AccessibilityService() {
 
     companion object {
         var ctx: InputService? = null
+        var pendingWifiClick = false     // 自动开启wifi
         val isOpen: Boolean
             get() = ctx != null
     }
@@ -92,8 +93,8 @@ class InputService : AccessibilityService() {
 
     private var lastX = 0
     private var lastY = 0
-	
-	// 右键相关变量 - 重构核心
+    
+    // 右键相关变量 - 重构核心
     private var isRightClickFirst = false // 标记是否是右键第一次点击
     private var rightClickFirstTime = 0L // 右键第一次点击的时间戳
     private var isWaitingRightLongPress = false // 右键长按标记
@@ -186,8 +187,8 @@ class InputService : AccessibilityService() {
                     Log.d(logTag, "右键长按触发 - 显示任务栏")
                     isWaitingRightLongPress = false
                     resetRightClickState()
-					// 右键长按：显示任务栏/最近应用
-					performGlobalAction(GLOBAL_ACTION_RECENTS)
+                    // 右键长按：显示任务栏/最近应用
+                    performGlobalAction(GLOBAL_ACTION_RECENTS)
                 }
             }
             mainHandler.postDelayed(rightLongPressRunnable!!, longPressDuration)
@@ -264,8 +265,8 @@ class InputService : AccessibilityService() {
         if (mask == WHEEL_BUTTON_UP) {
             if (recentActionTask != null) {
                 recentActionTask!!.cancel()
-				// 中键点击：显示通知栏/最近应用
-				performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
+                // 中键点击：显示通知栏/最近应用
+                performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
             }
             return
         }
@@ -825,8 +826,40 @@ class InputService : AccessibilityService() {
             return success
         }
     
-    
+        // 自动开启wifi，还原保留头尾
         override fun onAccessibilityEvent(event: AccessibilityEvent) {
+            if (!pendingWifiClick) return
+            if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+            if (event.packageName?.toString() != "com.android.settings") return
+        
+            mainHandler.postDelayed({
+                if (!pendingWifiClick) return@postDelayed
+                try {
+                    val path = Path()
+                    path.moveTo(WIFI_CLICK_X.toFloat(), WIFI_CLICK_Y.toFloat())
+                    val stroke = GestureDescription.StrokeDescription(path, 0, 100L)
+                    val builder = GestureDescription.Builder()
+                    builder.addStroke(stroke)
+                    dispatchGesture(builder.build(), object : GestureResultCallback() {
+                        override fun onCompleted(gestureDescription: GestureDescription?) {
+                            Log.d(logTag, "wifi click completed")
+                            mainHandler.postDelayed({
+                                performGlobalAction(GLOBAL_ACTION_HOME)
+                                pendingWifiClick = false
+                                Log.d(logTag, "wifi click back home")
+                            }, 2000L)
+                        }
+                        override fun onCancelled(gestureDescription: GestureDescription?) {
+                            Log.e(logTag, "wifi click cancelled")
+                            pendingWifiClick = false
+                        }
+                    }, null)
+                    Log.d(logTag, "wifi click at ($WIFI_CLICK_X, $WIFI_CLICK_Y)")
+                } catch (e: Exception) {
+                    Log.e(logTag, "wifi click error: $e")
+                    pendingWifiClick = false
+                }
+            }, 800L)
         }
     
         override fun onServiceConnected() {
@@ -852,6 +885,7 @@ class InputService : AccessibilityService() {
             ctx = null
             // 取消所有未执行的右键任务，避免内存泄漏
             removeAllRightClickRunnables()
+            pendingWifiClick = false    // 自动开启wifi
             timer.purge()
             mainHandler.removeCallbacksAndMessages(null) // 清空所有Handler任务
             super.onDestroy()
