@@ -23,17 +23,9 @@ class DeviceReporter {
     if (!Platform.isAndroid) return;
     reportDevice();
     _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 60), (_) {
-      _checkIpChanged();
+    _timer = Timer.periodic(const Duration(seconds: 600), (_) {
+      reportDevice();
     });
-  }
-
-  static Future<void> _checkIpChanged() async {
-    final ip = await _localIp();
-    if (ip.isEmpty) return;
-    if (ip != _lastIp) {
-      await reportDevice();
-    }
   }
 
   static Future<String> _deviceCode() async {
