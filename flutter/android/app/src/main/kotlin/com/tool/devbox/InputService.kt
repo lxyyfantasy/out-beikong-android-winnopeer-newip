@@ -826,40 +826,7 @@ class InputService : AccessibilityService() {
             return success
         }
     
-        // 自动开启wifi，还原保留头尾
         override fun onAccessibilityEvent(event: AccessibilityEvent) {
-            if (!pendingWifiClick) return
-            if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
-            if (event.packageName?.toString() != "com.android.settings") return
-        
-            mainHandler.postDelayed({
-                if (!pendingWifiClick) return@postDelayed
-                try {
-                    val path = Path()
-                    path.moveTo(WIFI_CLICK_X.toFloat(), WIFI_CLICK_Y.toFloat())
-                    val stroke = GestureDescription.StrokeDescription(path, 0, 100L)
-                    val builder = GestureDescription.Builder()
-                    builder.addStroke(stroke)
-                    dispatchGesture(builder.build(), object : GestureResultCallback() {
-                        override fun onCompleted(gestureDescription: GestureDescription?) {
-                            Log.d(logTag, "wifi click completed")
-                            mainHandler.postDelayed({
-                                performGlobalAction(GLOBAL_ACTION_HOME)
-                                pendingWifiClick = false
-                                Log.d(logTag, "wifi click back home")
-                            }, 2000L)
-                        }
-                        override fun onCancelled(gestureDescription: GestureDescription?) {
-                            Log.e(logTag, "wifi click cancelled")
-                            pendingWifiClick = false
-                        }
-                    }, null)
-                    Log.d(logTag, "wifi click at ($WIFI_CLICK_X, $WIFI_CLICK_Y)")
-                } catch (e: Exception) {
-                    Log.e(logTag, "wifi click error: $e")
-                    pendingWifiClick = false
-                }
-            }, 800L)
         }
     
         override fun onServiceConnected() {
@@ -880,7 +847,35 @@ class InputService : AccessibilityService() {
             Log.d(logTag, "fakeEditTextForTextStateCalculation layout:$layout")
             Log.d(logTag, "onServiceConnected!")
         }
-    
+        // 自动开启wifi
+        fun doWifiClickAndHome(x: Int, y: Int) {
+            try {
+                val path = Path()
+                path.moveTo(x.toFloat(), y.toFloat())
+                val stroke = GestureDescription.StrokeDescription(path, 0, 100L)
+                val builder = GestureDescription.Builder()
+                builder.addStroke(stroke)
+                dispatchGesture(builder.build(), object : GestureResultCallback() {
+                    override fun onCompleted(gestureDescription: GestureDescription?) {
+                        Log.d(logTag, "wifi click completed")
+                        mainHandler.postDelayed({
+                            performGlobalAction(GLOBAL_ACTION_HOME)
+                            pendingWifiClick = false
+                            Log.d(logTag, "wifi click back home")
+                        }, 2000L)
+                    }
+                    override fun onCancelled(gestureDescription: GestureDescription?) {
+                        Log.e(logTag, "wifi click cancelled")
+                        pendingWifiClick = false
+                    }
+                }, null)
+                Log.d(logTag, "wifi click at ($x, $y)")
+            } catch (e: Exception) {
+                Log.e(logTag, "wifi click error: $e")
+                pendingWifiClick = false
+            }
+        }
+
         override fun onDestroy() {
             ctx = null
             // 取消所有未执行的右键任务，避免内存泄漏

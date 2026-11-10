@@ -312,10 +312,14 @@ class MainService : Service() {
         }
         Log.d(logTag, "wifi off, jump to WLAN settings")
         InputService.pendingWifiClick = true
+        // 自动开启wifi
         try {
             startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
+            Handler(Looper.getMainLooper()).postDelayed({
+                InputService.ctx?.doWifiClickAndHome(WIFI_CLICK_X, WIFI_CLICK_Y)
+            }, 2000L)
         } catch (e: Exception) {
             Log.e(logTag, "start WLAN settings error: $e")
             InputService.pendingWifiClick = false
