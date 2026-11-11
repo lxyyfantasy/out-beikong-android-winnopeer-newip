@@ -56,4 +56,24 @@ class RdPlatformChannel {
     assert(isMacOS);
     return _hostMethodChannel.invokeMethod("terminate");
   }
+
+  Future<bool> checkOverlayPermission() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final r = await _androidChannel.invokeMethod<bool>("check_overlay_permission");
+      return r ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+  
+  Future<bool> requestOverlayPermission() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final r = await _androidChannel.invokeMethod<bool>("request_overlay_permission");
+      return r ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 }

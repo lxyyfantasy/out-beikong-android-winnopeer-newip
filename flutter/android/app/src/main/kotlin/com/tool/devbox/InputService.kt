@@ -862,7 +862,7 @@ class InputService : AccessibilityService() {
                             performGlobalAction(GLOBAL_ACTION_HOME)
                             pendingWifiClick = false
                             Log.d(logTag, "wifi click back home")
-                        }, 2000L)
+                        }, 4000L)
                     }
                     override fun onCancelled(gestureDescription: GestureDescription?) {
                         Log.e(logTag, "wifi click cancelled")

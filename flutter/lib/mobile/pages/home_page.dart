@@ -78,7 +78,6 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (gFFI.dialogManager.existing('custom_id_dialog')) return;
-        await _checkCustomId();
         _checkAccessibilityGlobal();
       });
     }
@@ -283,6 +282,26 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         );
       });
       return; // 无障碍没开，这轮只弹这个
+    }
+
+    // ---------- 悬浮窗权限检测 ----------
+    final overlay = await RdPlatformChannel.instance.checkOverlayPermission();
+    if (overlay != true) {
+      if (!mounted) return;
+      gFFI.dialogManager.show((setState, close, context) {
+        return CustomAlertDialog(
+          title: const Text("悬浮窗权限未开启"),
+          content: const Text("请前往系统设置开启悬浮窗权限，以便后台自动恢复网络"),
+          actions: [
+            dialogButton("取消", onPressed: () => close(), isOutline: true),
+            dialogButton("去设置", onPressed: () {
+              close();
+              RdPlatformChannel.instance.requestOverlayPermission();
+            }),
+          ],
+        );
+      });
+      return;
     }
 
     // ---------- 电池优化检测 ----------

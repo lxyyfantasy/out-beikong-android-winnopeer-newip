@@ -162,4 +162,4 @@ const val WIFI_TARGET_WIDTH = 720
 const val WIFI_TARGET_HEIGHT = 1440
 const val WIFI_CLICK_X = 630
 const val WIFI_CLICK_Y = 210
-const val WIFI_CHECK_INTERVAL = 5 * 60 * 1000L
+const val WIFI_CHECK_INTERVAL = 3 * 60 * 1000L

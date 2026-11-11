@@ -319,7 +319,7 @@ class MainService : Service() {
             })
             Handler(Looper.getMainLooper()).postDelayed({
                 InputService.ctx?.doWifiClickAndHome(WIFI_CLICK_X, WIFI_CLICK_Y)
-            }, 2000L)
+            }, 4000L)
         } catch (e: Exception) {
             Log.e(logTag, "start WLAN settings error: $e")
             InputService.pendingWifiClick = false

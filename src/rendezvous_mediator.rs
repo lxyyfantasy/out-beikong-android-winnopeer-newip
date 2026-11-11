@@ -13,8 +13,8 @@ use hbb_common::{
     allow_err,
     anyhow::{self, bail},
     config::{
-        self, keys::*, option2bool, use_ws, Config, Config2, CONNECT_TIMEOUT, REG_INTERVAL,
-        RENDEZVOUS_PORT,
+        self, keys::*, option2bool, use_ws, Config, Config2, CONNECT_TIMEOUT, READ_TIMEOUT,
+        REG_INTERVAL, RENDEZVOUS_PORT,
     },
     futures::future::join_all,
     log,
@@ -720,13 +720,73 @@ impl RendezvousMediator {
     }
 
     async fn handle_uuid_mismatch(&mut self, _socket: Sink<'_>) -> ResultType<()> {
+        // 已经在处理别的服务器冲突，直接返回
+        {
+            let solving = SOLVING_PK_MISMATCH.lock().await;
+            if !solving.is_empty() && *solving != self.host {
+                return Ok(());
+            }
+        }
+
+        // 首次 mismatch 已算 1 次；3 秒一轮主动发 RegisterPk，最多 3 次
+        let mut cnt: u32 = 1;
+        while cnt < 3 {
+            sleep(3.).await;
+
+            let pk = Config::get_key_pair().1;
+            let uuid = hbb_common::get_uuid();
+            let id = Config::get_id();
+            let mut msg_out = Message::new();
+            msg_out.set_register_pk(RegisterPk {
+                id,
+                uuid: uuid.into(),
+                pk: pk.into(),
+                no_register_device: Config::no_register_device(),
+                ..Default::default()
+            });
+
+            // 新建短连接探测，不复用主循环正在借用的 socket
+            let probe_res = async {
+                let mut conn = connect_tcp(self.host.clone(), CONNECT_TIMEOUT).await?;
+                let key = crate::get_key(true).await;
+                crate::secure_tcp(&mut conn, &key).await?;
+                conn.send(&msg_out).await?;
+                if let Some(Ok(bytes)) = conn.next_timeout(READ_TIMEOUT).await {
+                    if let Ok(msg) = Message::parse_from_bytes(&bytes) {
+                        if let Some(rendezvous_message::Union::RegisterPkResponse(r)) = msg.union {
+                            return Ok::<_, anyhow::Error>(Some(
+                                r.result.enum_value().ok(),
+                            ));
+                        }
+                    }
+                }
+                Ok(None)
+            }
+            .await;
+
+            match probe_res {
+                Ok(Some(Some(register_pk_response::Result::UUID_MISMATCH))) => {
+                    cnt += 1;
+                    log::warn!("UUID_MISMATCH probe #{}, keep looping", cnt);
+                }
+                _ => {
+                    // 收到正常应答、其它错误、或连不上/超时：全部跳出，不弹
+                    log::info!("UUID_MISMATCH probe recovered or inconclusive, skip dialog");
+                    return Ok(());
+                }
+            }
+        }
+
+        // 连续 3 次确认冲突，弹窗
         {
             let mut solving = SOLVING_PK_MISMATCH.lock().await;
             if solving.is_empty() || *solving == self.host {
-                log::info!("UUID_MISMATCH received from {}", self.host);
+                log::info!(
+                    "UUID_MISMATCH confirmed {} times from {}, popup",
+                    cnt,
+                    self.host
+                );
                 Config::set_key_confirmed(false);
-
-                // 内存 + 文件双写冲突标记，保证重启后仍会弹窗
                 hbb_common::config::NEED_WAIT_ID
                     .store(true, std::sync::atomic::Ordering::SeqCst);
                 hbb_common::config::LocalConfig::set_option(
@@ -736,7 +796,6 @@ impl RendezvousMediator {
                 hbb_common::config::ID_REGISTERED
                     .store(false, std::sync::atomic::Ordering::SeqCst);
                 hbb_common::config::LocalConfig::set_option("id-registered".into(), "".into());
-                // 通知 Flutter 弹窗（运行中也能弹）
                 #[cfg(any(target_os = "android", target_os = "ios", feature = "flutter"))]
                 {
                     let _ = crate::flutter::push_global_event(
@@ -745,12 +804,8 @@ impl RendezvousMediator {
                     );
                 }
                 *solving = self.host.clone();
-            } else {
-                return Ok(());
             }
         }
-        // 不 notify ID_READY，不重新 register_pk，直接返回，
-        // 让本次注册停在这里，等用户手动改 ID 后自己点连接再注册。
         Ok(())
     }
 

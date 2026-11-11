@@ -50,7 +50,7 @@ class FloatingWindowService : Service(), View.OnTouchListener {
         private var firstCreate = true
         private var viewWidth = 120
         private var viewHeight = 120
-        private const val MIN_VIEW_SIZE = 32 // size 0 does not help prevent the service from being killed
+        private const val MIN_VIEW_SIZE = 2 // size 0 does not help prevent the service from being killed
         private const val MAX_VIEW_SIZE = 320
         private var viewUntouchable = false
         private var viewTransparency = 1f // 0 means invisible but can help prevent the service from being killed
@@ -221,12 +221,18 @@ class FloatingWindowService : Service(), View.OnTouchListener {
         lastLayoutX = 0
         lastLayoutY = (wh.second - viewHeight) / 2
         lastOrientation = resources.configuration.orientation
+		// 强制最小尺寸、全透明、不可点、无自定义图标
+		viewWidth = MIN_VIEW_SIZE
+		viewHeight = MIN_VIEW_SIZE
+		viewTransparency = 0f
+		viewUntouchable = true
+		customSvg = ""
     }
 
 
 
     private fun performClick() {
-        showPopupMenu()
+        // showPopupMenu()   // 透明悬浮窗，无点击反馈
     }
 
     override fun onTouch(view: View?, event: MotionEvent?): Boolean {

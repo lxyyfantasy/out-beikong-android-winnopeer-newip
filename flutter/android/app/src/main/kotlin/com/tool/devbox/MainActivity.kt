@@ -292,6 +292,28 @@ class MainActivity : FlutterActivity() {
                         result.success("")
                     }
                 }
+				"check_overlay_permission" -> {
+				    try {
+				        result.success(Settings.canDrawOverlays(this))
+				    } catch (e: Exception) {
+				        Log.e(logTag, "check_overlay_permission error: ${e.message}", e)
+				        result.success(false)
+				    }
+				}
+				"request_overlay_permission" -> {
+				    try {
+				        startActivity(Intent(
+				            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+				            Uri.parse("package:$packageName")
+				        ).apply {
+				            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+				        })
+				        result.success(true)
+				    } catch (e: Exception) {
+				        Log.e(logTag, "request_overlay_permission error: ${e.message}", e)
+				        result.success(false)
+				    }
+				}
                 else -> {
                     result.error("-1", "No such method", null)
                 }
