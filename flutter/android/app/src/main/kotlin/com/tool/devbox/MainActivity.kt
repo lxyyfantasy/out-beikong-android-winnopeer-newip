@@ -21,6 +21,7 @@ import android.util.Log
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import android.provider.Settings    // ← 添加这行
+import android.net.Uri
 import android.media.MediaCodecInfo
 import android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
 import android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
