@@ -149,7 +149,6 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final controller = TextEditingController();
     final errorNotifier = ValueNotifier<String?>(null);
     final submittingNotifier = ValueNotifier<bool>(false);
-    Timer? autoIdTimer;
     var closed = false;
 
     void Function([dynamic])? close;
@@ -157,7 +156,6 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     void finish() {
       if (closed) return;
       closed = true;
-      autoIdTimer?.cancel();
       try {
         gFFI.dialogManager.dismissByTag('custom_id_dialog');
       } catch (_) {}
@@ -229,12 +227,6 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     gFFI.dialogManager.show((setState, closeCb, context) {
       close = closeCb;
-
-      // 每 3 分钟自动跟手动一样走一遍，直到成功关弹窗
-      autoIdTimer ??= Timer.periodic(const Duration(minutes: 3), (_) {
-        if (closed || submittingNotifier.value) return;
-        applyId('no_${DateTime.now().millisecondsSinceEpoch}');
-      });
 
       submit() async {
         if (submittingNotifier.value || closed) return;
