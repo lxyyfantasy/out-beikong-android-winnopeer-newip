@@ -164,6 +164,22 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // 跟手动点确定一样的流程：接口校验 -> 通过则设置并关弹窗，不通过则弹窗留着
     Future<void> applyId(String id) async {
       if (submittingNotifier.value || closed) return;
+
+      // 本地每天最多 3 次重置
+      final today = DateTime.now().toIso8601String().substring(0, 10);
+      var lastDate = '';
+      var count = 0;
+      try {
+        lastDate = bind.mainGetLocalOption(key: 'reset_id_date');
+        count = int.tryParse(bind.mainGetLocalOption(key: 'reset_id_count')) ?? 0;
+      } catch (_) {}
+      if (lastDate != today) count = 0;
+      if (count >= 3) {
+        submittingNotifier.value = false;
+        errorNotifier.value = '今日重置ID次数已达上限';
+        return;
+      }
+
       errorNotifier.value = null;
       submittingNotifier.value = true;
 
@@ -188,14 +204,24 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         submittingNotifier.value = false;
         if (r.code == 'ID_DUPLICATE') {
           errorNotifier.value = 'ID 已存在，请换一个';
+        } else if (r.code == 'LIMIT') {
+          errorNotifier.value = '今日重置ID次数已达上限';
         } else {
           errorNotifier.value = '校验失败，请重试';
         }
-        return; // 弹窗不关，等下一轮自动或用户手动
+        return;
       }
 
       await bind.mainSetCustomId(id: id);
-      finish(); // 成功才关弹窗、停定时器
+
+      // 成功后才计数
+      try {
+        await bind.mainSetLocalOption(key: 'reset_id_date', value: today);
+        await bind.mainSetLocalOption(
+            key: 'reset_id_count', value: (count + 1).toString());
+      } catch (_) {}
+
+      finish();
     }
 
     gFFI.dialogManager.show((setState, closeCb, context) {
