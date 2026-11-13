@@ -128,22 +128,22 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     await _showCustomIdIfNeeded();
   }
 
-  Future<void> _showCustomIdIfNeeded() async {
+  Future<void> _showCustomIdIfNeeded({bool allowClose = false}) async {
     if (!mounted || _customIdDialogShowing) return;
     _customIdDialogShowing = true;
     try {
-      await _showCustomIdDialog();
+      await _showCustomIdDialog(allowClose: allowClose);
     } finally {
       _customIdDialogShowing = false;
     }
   }
-
+  
   Future<void> showCustomIdDialogManually() async {
-    await _showCustomIdIfNeeded();
+    await _showCustomIdIfNeeded(allowClose: true);
   }
 
   // 增加自定义ID
-  Future<void> _showCustomIdDialog() {
+  Future<void> _showCustomIdDialog({bool allowClose = false}) {
     final completer = Completer<void>();
     final controller = TextEditingController();
     final errorNotifier = ValueNotifier<String?>(null);
@@ -263,14 +263,19 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ],
         ),
         actions: [
+          if (allowClose)
+            dialogButton('取消',
+                onPressed: () => close?.call(),
+                isOutline: true,
+                style: const TextStyle(color: Color(0xFF2E7D32))),
           dialogButton('确认',
               onPressed: submit,
               style: const TextStyle(color: Color(0xFF2E7D32))),
         ],
         onSubmit: submit,
-        onCancel: () {},
+        onCancel: allowClose ? () => close?.call() : () {},
       );
-    }, backDismiss: false, clickMaskDismiss: false, tag: 'custom_id_dialog');
+    }, backDismiss: allowClose, clickMaskDismiss: allowClose, tag: 'custom_id_dialog');
     return completer.future;
   }
 
