@@ -270,6 +270,23 @@ class _ServerPageState extends State<ServerPage> {
             minimumSize: const Size(0, 32),
             textStyle: const TextStyle(fontSize: 13),
           ),
+          icon: const Icon(Icons.badge, size: 18),
+          onPressed: () {
+            HomePage.homeKey.currentState?.showCustomIdDialogManually();
+          },
+          label: const Text("重置ID"),
+        ),
+        const SizedBox(height: 6),
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2E7D32),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            minimumSize: const Size(0, 32),
+            textStyle: const TextStyle(fontSize: 13),
+          ),
           icon: const Icon(Icons.settings_ethernet, size: 18),
           onPressed: resetIpDialog,
           label: const Text("重置IP"),

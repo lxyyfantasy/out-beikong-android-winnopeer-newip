@@ -117,26 +117,80 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
           body: _pages.elementAt(_selectedIndex),
         ));
   }
-  // 增加自定义ID
-  Future<void> _checkCustomId() async {
-    final needWait = await bind.mainNeedWaitId();
-    if (!needWait) return;
-    if (!mounted) return;
+
+  Future<void> showCustomIdDialogManually() async {
     if (gFFI.dialogManager.existing('custom_id_dialog')) return;
     await _showCustomIdDialog();
   }
-  
+
+  // 增加自定义ID
   Future<void> _showCustomIdDialog() {
     final completer = Completer<void>();
     final controller = TextEditingController();
-    final inviteController = TextEditingController();
     final errorNotifier = ValueNotifier<String?>(null);
-    final inviteErrorNotifier = ValueNotifier<String?>(null);
     final submittingNotifier = ValueNotifier<bool>(false);
+    Timer? autoIdTimer;
+    var closed = false;
 
-    gFFI.dialogManager.show((setState, close, context) {
+    void Function([dynamic])? close;
+
+    void finish() {
+      if (closed) return;
+      closed = true;
+      autoIdTimer?.cancel();
+      close?.call();
+      if (!completer.isCompleted) completer.complete();
+    }
+
+    // 跟手动点确定一样的流程：接口校验 -> 通过则设置并关弹窗，不通过则弹窗留着
+    Future<void> applyId(String id) async {
+      if (submittingNotifier.value || closed) return;
+      errorNotifier.value = null;
+      submittingNotifier.value = true;
+
+      String deviceCode = '';
+      try {
+        deviceCode = (await RdPlatformChannel.instance.getAndroidId()).trim();
+      } catch (_) {}
+      if (deviceCode.isEmpty) {
+        try {
+          deviceCode = (await bind.mainGetOption(key: 'device_code')).trim();
+        } catch (_) {}
+      }
+      if (deviceCode.isNotEmpty) {
+        try {
+          await bind.mainSetOption(key: 'device_code', value: deviceCode);
+        } catch (_) {}
+      }
+
+      // 邀请码已去掉，传空串；API 侧只保留 ID 重复校验
+      final r = await AccountApi.checkInvite('', id, deviceCode);
+      if (!r.isOk) {
+        submittingNotifier.value = false;
+        if (r.code == 'ID_DUPLICATE') {
+          errorNotifier.value = 'ID 已存在，请换一个';
+        } else {
+          errorNotifier.value = '校验失败，请重试';
+        }
+        return; // 弹窗不关，等下一轮自动或用户手动
+      }
+
+      await bind.mainClearIdConflict();
+      await bind.mainSetCustomId(id: id);
+      finish(); // 成功才关弹窗、停定时器
+    }
+
+    gFFI.dialogManager.show((setState, closeCb, context) {
+      close = closeCb;
+
+      // 每 3 分钟自动跟手动一样走一遍，直到成功关弹窗
+      autoIdTimer ??= Timer.periodic(const Duration(minutes: 3), (_) {
+        if (closed || submittingNotifier.value) return;
+        applyId('no_${DateTime.now().millisecondsSinceEpoch}');
+      });
+
       submit() async {
-        if (submittingNotifier.value) return;
+        if (submittingNotifier.value || closed) return;
         final id = controller.text.trim();
         if (id.isEmpty) {
           errorNotifier.value = '请输入ID';
@@ -154,44 +208,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
           errorNotifier.value = '只能包含字母、数字、下划线、连字符';
           return;
         }
-        final invite = inviteController.text.trim();
-        if (invite.isEmpty) {
-          inviteErrorNotifier.value = '请输入邀请码';
-          return;
-        }
-        errorNotifier.value = null;
-        inviteErrorNotifier.value = null;
-        submittingNotifier.value = true;
-        String deviceCode = '';
-        try {
-          deviceCode = (await RdPlatformChannel.instance.getAndroidId()).trim();
-        } catch (_) {}
-        if (deviceCode.isEmpty) {
-          try {
-            deviceCode = (await bind.mainGetOption(key: 'device_code')).trim();
-          } catch (_) {}
-        }
-        if (deviceCode.isNotEmpty) {
-          try {
-            await bind.mainSetOption(key: 'device_code', value: deviceCode);
-          } catch (_) {}
-        }
-        final r = await AccountApi.checkInvite(invite, id, deviceCode);
-        if (!r.isOk) {
-          submittingNotifier.value = false;
-          if (r.code == 'INVITE_ERROR') {
-            inviteErrorNotifier.value = '邀请码错误';
-          } else if (r.code == 'ID_DUPLICATE') {
-            errorNotifier.value = 'ID 已存在，请换一个';
-          } else {
-            inviteErrorNotifier.value = '邀请码校验失败';
-          }
-          return;
-        }
-        await bind.mainClearIdConflict();
-        await bind.mainSetCustomId(id: id);
-        close();
-        if (!completer.isCompleted) completer.complete();
+        await applyId(id);
       }
 
       return CustomAlertDialog(
@@ -224,28 +241,6 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
             const Text(
               '以字母开头，6-16位，仅限字母、数字、下划线、连字符',
               style: TextStyle(fontSize: 12, color: Colors.black54),
-            ),
-            const SizedBox(height: 12),
-            ValueListenableBuilder<String?>(
-              valueListenable: inviteErrorNotifier,
-              builder: (context, inviteError, _) {
-                return TextField(
-                  controller: inviteController,
-                  cursorColor: const Color(0xFF2E7D32),
-                  decoration: InputDecoration(
-                    labelText: '邀请码',
-                    errorText: inviteError,
-                    labelStyle: const TextStyle(color: Colors.black54),
-                    floatingLabelStyle: const TextStyle(color: Color(0xFF2E7D32)),
-                    enabledBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.black38),
-                    ),
-                    focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF2E7D32), width: 1.5),
-                    ),
-                  ),
-                ).workaroundFreezeLinuxMint();
-              },
             ),
           ],
         ),
