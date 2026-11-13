@@ -118,9 +118,28 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ));
   }
 
+    bool _customIdDialogShowing = false;
+
+  Future<void> _checkCustomId() async {
+    if (_customIdDialogShowing) return;
+    final myId = await bind.mainGetMyId();
+    final needWait = await bind.mainNeedWaitId();
+    if (myId.isNotEmpty && !needWait) return;
+    await _showCustomIdIfNeeded();
+  }
+
+  Future<void> _showCustomIdIfNeeded() async {
+    if (!mounted || _customIdDialogShowing) return;
+    _customIdDialogShowing = true;
+    try {
+      await _showCustomIdDialog();
+    } finally {
+      _customIdDialogShowing = false;
+    }
+  }
+
   Future<void> showCustomIdDialogManually() async {
-    if (gFFI.dialogManager.existing('custom_id_dialog')) return;
-    await _showCustomIdDialog();
+    await _showCustomIdIfNeeded();
   }
 
   // 增加自定义ID
@@ -175,7 +194,6 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return; // 弹窗不关，等下一轮自动或用户手动
       }
 
-      await bind.mainClearIdConflict();
       await bind.mainSetCustomId(id: id);
       finish(); // 成功才关弹窗、停定时器
     }
