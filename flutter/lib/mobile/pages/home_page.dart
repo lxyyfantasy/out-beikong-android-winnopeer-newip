@@ -121,6 +121,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     bool _customIdDialogShowing = false;
 
   Future<void> _checkCustomId() async {
+    if (bind.mainGetLocalOption(key: 'id_initialized') == 'Y') return;
     if (_customIdDialogShowing) return;
     final myId = await bind.mainGetMyId();
     final needWait = await bind.mainNeedWaitId();

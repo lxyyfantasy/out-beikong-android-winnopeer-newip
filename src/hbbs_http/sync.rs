@@ -272,26 +272,7 @@ async fn start_hbbs_sync_async() {
                     if let Ok(mut rsp) = serde_json::from_str::<HashMap::<&str, Value>>(&s) {
                         if let Some(err) = rsp.remove("error") {
                             if err.as_str() == Some("id_duplicate") {
-                                log::warn!("heartbeat: id_duplicate");
-                                hbb_common::config::NEED_WAIT_ID
-                                    .store(true, std::sync::atomic::Ordering::SeqCst);
-                                hbb_common::config::LocalConfig::set_option(
-                                    "need-wait-id".into(),
-                                    "Y".into(),
-                                );
-                                hbb_common::config::ID_REGISTERED
-                                    .store(false, std::sync::atomic::Ordering::SeqCst);
-                                hbb_common::config::LocalConfig::set_option(
-                                    "id-registered".into(),
-                                    "".into(),
-                                );
-                                #[cfg(any(target_os = "android", target_os = "ios", feature = "flutter"))]
-                                {
-                                    let _ = crate::flutter::push_global_event(
-                                        crate::flutter::APP_TYPE_MAIN,
-                                        serde_json::json!({"name": "need_wait_id"}).to_string(),
-                                    );
-                                }
+                                log::warn!("heartbeat: id_duplicate, ignored");
                             }
                         }
                         if rsp.remove("sysinfo").is_some() {

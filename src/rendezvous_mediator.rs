@@ -777,32 +777,10 @@ impl RendezvousMediator {
             }
         }
 
-        // 连续 3 次确认冲突，弹窗
         {
             let mut solving = SOLVING_PK_MISMATCH.lock().await;
             if solving.is_empty() || *solving == self.host {
-                log::info!(
-                    "UUID_MISMATCH confirmed {} times from {}, popup",
-                    cnt,
-                    self.host
-                );
-                Config::set_key_confirmed(false);
-                hbb_common::config::NEED_WAIT_ID
-                    .store(true, std::sync::atomic::Ordering::SeqCst);
-                hbb_common::config::LocalConfig::set_option(
-                    "need-wait-id".into(),
-                    "Y".into(),
-                );
-                hbb_common::config::ID_REGISTERED
-                    .store(false, std::sync::atomic::Ordering::SeqCst);
-                hbb_common::config::LocalConfig::set_option("id-registered".into(), "".into());
-                #[cfg(any(target_os = "android", target_os = "ios", feature = "flutter"))]
-                {
-                    let _ = crate::flutter::push_global_event(
-                        crate::flutter::APP_TYPE_MAIN,
-                        serde_json::json!({"name": "need_wait_id"}).to_string(),
-                    );
-                }
+                log::info!("UUID_MISMATCH confirmed {} times from {}, ignored", cnt, self.host);
                 *solving = self.host.clone();
             }
         }
