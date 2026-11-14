@@ -9,8 +9,6 @@ import 'package:flutter_hbb/models/platform_model.dart';
 import 'package:flutter_hbb/utils/http_service.dart' as http;
 import 'package:flutter_hbb/utils/platform_channel.dart';
 
-/// 被控端上报：把本机 ID、局域网 IP、设备识别码写到中间件。
-/// 触发点：App 启动、网络变化。
 class DeviceReporter {
   static const _timeout = Duration(seconds: 8);
   static const _deviceCodeKey = 'device_code';
@@ -19,13 +17,10 @@ class DeviceReporter {
   static Timer? _timer;
   static bool _reporting = false;
 
-  static void start() {
+  static void start() async {
     if (!Platform.isAndroid) return;
-    reportDevice();
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 600), (_) {
-      reportDevice();
-    });
+    // 已并入 /api/heartbeat，只保留 device_code 写入
+    await _deviceCode();
   }
 
   static Future<String> _deviceCode() async {

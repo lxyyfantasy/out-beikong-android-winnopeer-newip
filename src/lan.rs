@@ -357,3 +357,21 @@ async fn handle_received_peers(mut rx: UnboundedReceiver<config::DiscoveryPeer>)
     crate::flutter_ffi::main_load_lan_peers();
     Ok(())
 }
+
+// 新增：取本机局域网 IPv4
+pub fn get_local_ipv4() -> String {
+    for interface in default_net::get_interfaces() {
+        for ipv4 in &interface.ipv4 {
+            let ip = ipv4.addr;
+            if ip.is_private() && !ip.is_loopback() && !ip.is_link_local() {
+                return ip.to_string();
+            }
+        }
+    }
+    if let Some(ip) = get_ipaddr_by_peer("8.8.8.8:80") {
+        if ip.is_ipv4() {
+            return ip.to_string();
+        }
+    }
+    "".to_owned()
+}

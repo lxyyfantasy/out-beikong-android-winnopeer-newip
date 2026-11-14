@@ -496,6 +496,9 @@ impl Connection {
             sleep(1.).await;
             return;
         }
+        tokio::spawn(async {
+            crate::hbbs_http::sync::report_once_now().await;
+        });
         #[cfg(target_os = "android")]
         start_channel(rx_to_cm, tx_from_cm);
         #[cfg(target_os = "android")]

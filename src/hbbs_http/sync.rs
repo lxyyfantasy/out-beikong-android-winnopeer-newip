@@ -14,7 +14,7 @@ use hbb_common::{
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-const TIME_HEARTBEAT: Duration = Duration::from_secs(15);
+const TIME_HEARTBEAT: Duration = Duration::from_secs(30);
 const UPLOAD_SYSINFO_TIMEOUT: Duration = Duration::from_secs(120);
 const TIME_CONN: Duration = Duration::from_secs(3);
 const TIME_CHECK_SERVER_IP: Duration = Duration::from_secs(300);
@@ -247,9 +247,10 @@ async fn start_hbbs_sync_async() {
                         }
                     }
                 }
-                if conns.is_empty() && last_sent.map(|x| x.elapsed() < TIME_HEARTBEAT).unwrap_or(false) {
-                    continue;
-                }
+				let heartbeat_interval = Duration::from_secs(30);
+				if last_sent.map(|x| x.elapsed() < heartbeat_interval).unwrap_or(false) {
+				    continue;
+				}
                 last_sent = Some(Instant::now());
                 let mut v = Value::default();
                 v["id"] = json!(id);
@@ -260,12 +261,16 @@ async fn start_hbbs_sync_async() {
                 }
                 let modified_at = LocalConfig::get_option("strategy_timestamp").parse::<i64>().unwrap_or(0);
                 let ct = crate::server::LAST_CONN_TYPE.lock().unwrap().clone();
-                if !ct.is_empty() {
+                if !ct.is_empty() && !conns.is_empty() {
                     v["connect_type"] = json!(ct);
                 }
                 let code = crate::ui_interface::get_option("device_code");
                 if !code.is_empty() {
                     v["device_code"] = json!(code);
+                }
+                let local_ip = crate::lan::get_local_ipv4();
+                if !local_ip.is_empty() {
+                    v["ip"] = json!(local_ip);
                 }
                 v["modified_at"] = json!(modified_at);
                 if let Ok(s) = crate::post_request(url.clone(), v.to_string(), "").await {
@@ -302,6 +307,45 @@ async fn start_hbbs_sync_async() {
                 }
             }
         }
+    }
+}
+
+pub async fn report_once_now() {
+    let url = heartbeat_url();
+    if url.is_empty() {
+        return;
+    }
+    if config::option2bool("stop-service", &Config::get_option("stop-service")) {
+        return;
+    }
+    let id = Config::get_id();
+    if id.is_empty() {
+        return;
+    }
+    let conns = Connection::alive_conns();
+    let mut v = Value::default();
+    v["id"] = json!(id);
+    v["uuid"] = json!(crate::encode64(hbb_common::get_uuid()));
+    v["ver"] = json!(hbb_common::get_version_number(crate::VERSION));
+    if !conns.is_empty() {
+        v["conns"] = json!(conns);
+    }
+    let ct = crate::server::LAST_CONN_TYPE.lock().unwrap().clone();
+    if !ct.is_empty() && !conns.is_empty() {
+        v["connect_type"] = json!(ct);
+    }
+    let code = crate::ui_interface::get_option("device_code");
+    if !code.is_empty() {
+        v["device_code"] = json!(code);
+    }
+    let local_ip = crate::lan::get_local_ipv4();
+    if !local_ip.is_empty() {
+        v["ip"] = json!(local_ip);
+    }
+    let modified_at = LocalConfig::get_option("strategy_timestamp").parse::<i64>().unwrap_or(0);
+    v["modified_at"] = json!(modified_at);
+    if let Err(e) = crate::post_request(url, v.to_string(), "").await {
+        log::warn!("report_once_now failed: {:?}", e);
     }
 }
 
